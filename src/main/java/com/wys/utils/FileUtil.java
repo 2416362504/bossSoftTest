@@ -15,11 +15,22 @@ import org.dom4j.io.SAXReader;
 
 public class FileUtil {
 
-    /**
-     * 字符编码
+    /*/**
+     * @description: 字符编码
+     * @author: wys
+     * @date: 2024/01/08  19/52
+     * @param:
+     * @return:
      */
     public final static String ENCODING = "UTF-8";
 
+    /**
+     * @description: 通过路径读取文件内容并加密
+     * @author: wys
+     * @date: 2024/01/08  19/55
+     * @param: [fileName]  文件路径
+     * @return: byte[]
+     */
     public static byte[] readFileToByteArray(String fileName) throws Exception {
 
         byte[] data = Files.readAllBytes(Paths.get(fileName));
@@ -30,11 +41,11 @@ public class FileUtil {
     }
 
     /**
-     * Base64编码
-     *
-     * @param data 待编码数据
-     * @return String 编码数据
-     * @throws Exception
+     * @description: Base64编码
+     * @author: wys
+     * @date: 2024/01/08  19/56
+     * @param: [data] 待编码数据
+     * @return: byte[]
      */
     public static byte[] encode(byte[] data) throws Exception {
 
@@ -45,14 +56,11 @@ public class FileUtil {
     }
 
     /**
-     * Base64安全编码<br>
-     * 遵循RFC 2045实现
-     *
-     * @param data
-     *            待编码数据
-     * @return String 编码数据
-     *
-     * @throws Exception
+     * @description: Base64安全编码<br>
+     * @author: wys
+     * @date: 2024/01/08  19/57
+     * @param: [data]  待编码数据
+     * @return: java.lang.String
      */
     public static String encodeSafe(String data) throws Exception {
 
@@ -63,11 +71,11 @@ public class FileUtil {
     }
 
     /**
-     * Base64解码
-     *
-     * @param data 待解码数据
-     * @return String 解码数据
-     * @throws Exception
+     * @description: Base64解码
+     * @author: wys
+     * @date: 2024/01/08  19/58
+     * @param: [data]  待解码数据
+     * @return: java.lang.String
      */
     public static String decode(String data) throws Exception {
 
@@ -76,10 +84,12 @@ public class FileUtil {
 
         return new String(b, ENCODING);
     }
-
-
-    /*
-    xml和json的解析
+    /**
+     * @description: 解析json和xml文件
+     * @author: wys
+     * @date: 2024/01/08  20/00
+     * @param: [path]  文件路径
+     * @return: void
      */
     public static void read(String path) throws Exception{
         File file = new File(path);
@@ -109,20 +119,29 @@ public class FileUtil {
 
     }
 
+    /**
+     * @description: 判断是否是xml文件
+     * @author: wys
+     * @date: 2024/01/08  20/01
+     * @param: [data]  文件内容
+     * @return: boolean
+     */
     public static boolean isXML(String data) {
         // 判断是否以<开头
         if (data.startsWith("<")) {
-            // 判断是否以</结束
-            if (data.endsWith(">")) {
-                return true;
-            } else {
-                return false;
-            }
+            return true;
         } else {
             return false;
         }
     }
 
+    /**
+     * @description: 判断是否是json文件
+     * @author: wys
+     * @date: 2024/01/08  20/02
+     * @param: [data]  文件内容
+     * @return: boolean
+     */
     public static boolean isJSON(String data) {
         // 判断是否以{或[开头
         if (data.startsWith("{") || data.startsWith("[")) {
@@ -137,6 +156,13 @@ public class FileUtil {
         }
     }
 
+    /**
+     * @description: 发送文件到服务器
+     * @author: wys
+     * @date: 2024/01/08  20/03
+     * @param: [outputStream, filePath]  文件路径
+     * @return: void
+     */
     public static void sendDataToServer(OutputStream outputStream, String filePath) throws Exception {
         byte[] data = FileUtil.readFileToByteArray(filePath);
         outputStream.write(data);

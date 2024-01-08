@@ -20,6 +20,7 @@ public class FileClient {
 
     private static SocketFactory socketFactory = new DefaultSocketFactory();
     private static String userId = "1";
+    private final static String END_OF_MESSAGE = "END_OF_MESSAGE";
     public static void main(String[] args) throws IOException {
 
         System.out.println("===========File客户端启动================");
@@ -31,6 +32,11 @@ public class FileClient {
         new FileClient.FileClientInputThread(socket).start();
     }
 
+    /**
+     * @description: 客户端的输入线程类
+     * @author: wys
+     * @date: 2024/01/08  20/03
+     */
     static class FileClientInputThread extends Thread {
 
         private Socket socket;
@@ -52,8 +58,8 @@ public class FileClient {
                         String msg;
                         //从Buffer中读取信息，如果读取到信息则输出
                         while ((msg = bufferedReader.readLine()) != null&&!socket.isClosed()) {
-                            System.out.println(msg);
-                            if ("END_OF_MESSAGE".equals(msg)) {
+                            //System.out.println(msg);
+                            if (END_OF_MESSAGE.equals(msg)) {
                                 break;
                             }
                             message.add(msg);
@@ -68,7 +74,7 @@ public class FileClient {
                             outputStream.write(data);
                             outputStream.write("\n".getBytes());
                             outputStream.flush();
-                            outputStream.write("END_OF_MESSAGE".getBytes());
+                            outputStream.write(END_OF_MESSAGE.getBytes());
                             outputStream.write("\n".getBytes());
                             outputStream.flush();
                             System.out.println("根据请求，成功发送文件给服务器");
@@ -78,7 +84,7 @@ public class FileClient {
                             System.out.println(FileUtil.decode(message.get(1)));
                         }
                     } catch (Exception e) {
-                        System.out.println("我下hhdd线了");
+                        System.out.println("我下线了");
                         outputStream.close();
                         inputStream.close();
                         socket.close();
@@ -87,12 +93,16 @@ public class FileClient {
                 }
 
             } catch (Exception e) {
-                System.out.println("add");
                 e.printStackTrace();
             }
         }
     }
 
+    /**
+     * @description: 客户端的输出线程类
+     * @author: wys
+     * @date: 2024/01/08  20/03
+     */
     static class FileClientOutputThread extends Thread {
 
         private Socket socket;
@@ -111,7 +121,7 @@ public class FileClient {
                     if(scanner.hasNext()) {
                         String filePath = scanner.nextLine();
                         if (filePath.equals("exit")) {
-                            System.out.println("mm我下线了");
+                            System.out.println("我下线了");
                             outputStream.close();
                             socket.getInputStream().close();
                             socket.close();
@@ -124,7 +134,7 @@ public class FileClient {
                             outputStream.write(data);
                             outputStream.write("\n".getBytes());
                             outputStream.flush();
-                            outputStream.write("END_OF_MESSAGE".getBytes());
+                            outputStream.write(END_OF_MESSAGE.getBytes());
                             outputStream.write("\n".getBytes());
                             outputStream.flush();
                             System.out.println("发送文件成功");

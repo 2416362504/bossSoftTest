@@ -51,7 +51,9 @@ public class FileServer {
     }
 
     /**
-     * File Server线程
+     * @description: 服务端输入线程
+     * @author: wys
+     * @date: 2024/01/08  20/07
      */
     static class FileServerInputThread extends Thread{
         //socket连接
@@ -77,26 +79,25 @@ public class FileServer {
                         //从Buffer中读取信息，如果读取到信息则输出
                         String msg;
                         while ((msg = bufferedReader.readLine()) != null) {
-                            System.out.println(msg);
+                            //System.out.println(msg);
                             if ("END_OF_MESSAGE".equals(msg)) {
                                 break;
                             }
                             message.add(msg);
                         }
-                        System.out.println("收到的数组为："+message.size());
+                        //System.out.println("收到的数组为："+message.size());
                         //判断是否为结束信息,如果为空，则关闭连接
                         if (message.size()==0) {
-                            System.out.println("客户端ggg下线了"+socket.getRemoteSocketAddress());
+                            System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                             bufferedReader.close();
                             socket.close();
                             break;
                         }
-
+                        //判断是否为单条信息 如果是则存储到服务端的本地磁盘
                         if(message.size()==1) {
                             System.out.println("收到客户端消息：\n" + message.get(0));
                             msg = FileUtil.decode(message.get(0));
                             if (FileUtil.isXML(msg)) {
-                                System.out.println("dsfsdgsdg");
                                 try (FileWriter writer = new FileWriter("E:\\IDEAWorkspace\\bossSoftTest\\src\\main\\resources\\2.xml")) { // 省略第二个参数的话，写入位置从文件开头开始
                                     writer.write(msg);
                                 }
@@ -108,19 +109,18 @@ public class FileServer {
                                 System.out.println("数据不是json格式或者xml格式，请重新选择：\n");
                             }
                         }
+                        //如果是双条信息，则将文件内容发送给指定的客户端
                         if(message.size()==2){
                             System.out.println("要发送的客户端id为："+message.get(0));
                             //message.get(0)为客户端的id，message.get(1)为文件内容
                             new FileOutputToClientThread(message.get(0),message.get(1)).start();
                         }
-                        System.out.println("ddddd");
-
                     } catch (Exception e) {
                         if (userIdList.contains(id)) {
                             userIdList.remove(id);
                             socketMap.remove(id);
                         }
-                        System.out.println("客户端ggg下线了"+socket.getRemoteSocketAddress());
+                        System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                         bufferedReader.close();
                         socket.close();
                         break;
@@ -131,6 +131,12 @@ public class FileServer {
             }
         }
     }
+
+    /**
+     * @description: 服务端输出线程
+     * @author: wys
+     * @date: 2024/01/08  20/07
+     */
     static class FileServerOutputThread extends Thread {
         //socket连接
         private Socket socket;
@@ -166,7 +172,7 @@ public class FileServer {
                                 userIdList.remove(id);
                                 socketMap.remove(id);
                             }
-                            System.out.println("客户端下aaaa线了"+socket.getRemoteSocketAddress());
+                            System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                             break;
                         }
                     } catch (Exception e) {
@@ -174,7 +180,7 @@ public class FileServer {
                             userIdList.remove(id);
                             socketMap.remove(id);
                         }
-                        System.out.println("客户端下aaaa线了"+socket.getRemoteSocketAddress());
+                        System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                         printStream.close();
                         socket.close();
                         break;
@@ -186,6 +192,11 @@ public class FileServer {
         }
     }
 
+    /**
+     * @description: 服务端转发线程
+     * @author: wys
+     * @date: 2024/01/08  20/07
+     */
     static class FileOutputToClientThread extends Thread {
         private String id;
         private String msg;
@@ -197,10 +208,10 @@ public class FileServer {
         @Override
         public void run() {
             while(true){
+                System.out.println(userIdList.contains(id));
                 if(!userIdList.contains(id)){
                     continue;
                 }
-                System.out.println("开始转发消息");
                 Socket socket = socketMap.get(id);
                 try {
                     System.out.println("收到客户端发给客户端"+id+"的加密消息：\n" + msg);
