@@ -1,13 +1,18 @@
 package com.wys.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import jdk.nashorn.internal.ir.debug.ClassHistogramElement;
 import org.apache.commons.codec.binary.Base64;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -23,6 +28,8 @@ public class FileUtil {
      * @return:
      */
     public final static String ENCODING = "UTF-8";
+    private static final String END_OF_MESSAGE = "END_OF_MESSAGE";
+    private static final String NEW_LINE = "\n";
 
     /**
      * @description: 通过路径读取文件内容并加密
@@ -173,5 +180,51 @@ public class FileUtil {
         outputStream.flush();
         System.out.println("发送文件成功");
     }
+
+    public static List<String> readMessage(BufferedReader bufferedReader) throws IOException {
+        List<String> message = new ArrayList<>();
+        String msg;
+        while ((msg = bufferedReader.readLine()) != null) {
+            if (msg.equals(END_OF_MESSAGE)) {
+                break;
+            }
+            message.add(msg);
+        }
+        return message;
+    }
+
+    public static void handleClientMessage(OutputStream outputStream, List<String> message) throws Exception {
+        if (message.size() == 1) {
+            // Handle file sending
+            String dataString = message.get(0);
+            byte[] data = FileUtil.readFileToByteArray(dataString);
+            sendOutput(outputStream, data, dataString);
+        } else if (message.size() == 2) {
+            // Handle message print
+            String clientName = message.get(0);
+            String messageContent = FileUtil.decode(message.get(1));
+            printMessage(clientName, messageContent);
+        }
+    }
+
+    public static void sendOutput(OutputStream outputStream, byte[] data, String dataString) throws IOException {
+        outputStream.write(data);
+        outputStream.write(NEW_LINE.getBytes());
+        outputStream.write(END_OF_MESSAGE.getBytes());
+        outputStream.write(NEW_LINE.getBytes());
+        outputStream.flush();
+        System.out.println("根据请求，成功发送文件给服务器");
+    }
+
+    public static void printMessage(String clientName, String messageContent) {
+        System.out.println("客户端" + clientName + "发送给你的消息为:");
+        System.out.println(messageContent);
+    }
+
+    public static void logError(Exception e) {
+        e.printStackTrace();
+        System.out.println("我下线了");
+    }
+
 
 }

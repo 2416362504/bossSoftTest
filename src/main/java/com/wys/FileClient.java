@@ -6,9 +6,6 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
-import com.wys.factory.SocketFactory;
-import com.wys.factory.impl.DefaultSocketFactory;
 import com.wys.utils.FileUtil;
 
 /**
@@ -17,10 +14,8 @@ import com.wys.utils.FileUtil;
  * @Description File客户端
  */
 public class FileClient {
-
-    private static SocketFactory socketFactory = new DefaultSocketFactory();
+    private static final String END_OF_MESSAGE = "END_OF_MESSAGE";
     private static String userId = "1";
-    private final static String END_OF_MESSAGE = "END_OF_MESSAGE";
     public static void main(String[] args) throws IOException {
 
         System.out.println("===========File客户端启动================");
@@ -32,67 +27,37 @@ public class FileClient {
         new FileClient.FileClientInputThread(socket).start();
     }
 
-    /**
+    /*/**
      * @description: 客户端的输入线程类
      * @author: wys
      * @date: 2024/01/08  20/03
      */
     static class FileClientInputThread extends Thread {
-
-        private Socket socket;
+        private final Socket socket;
         public FileClientInputThread(Socket socket) {
             this.socket = socket;
         }
+
         @Override
         public void run() {
-            try {
-                OutputStream outputStream = socket.getOutputStream();
-                //从socket中获取字节输入流
-                InputStream inputStream = socket.getInputStream();
+            try (OutputStream outputStream = socket.getOutputStream();
+                 InputStream inputStream = socket.getInputStream()) {
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 
                 while (true) {
-                    try {
-                        // 读取数据
-                        List<String> message = new ArrayList<>();
-                        String msg;
-                        //从Buffer中读取信息，如果读取到信息则输出
-                        while ((msg = bufferedReader.readLine()) != null&&!socket.isClosed()) {
-                            //System.out.println(msg);
-                            if (END_OF_MESSAGE.equals(msg)) {
-                                break;
-                            }
-                            message.add(msg);
-                        }
-                        if (message.size()==0) {
-                            continue;
-                        }
-                        if(message.size()==1) {
-                            System.out.println("收到服务端请求：" + message);
+                    List<String> message = FileUtil.readMessage(bufferedReader);
+                    if (message.isEmpty()) {
+                        continue;
+                    }
 
-                            byte[] data = FileUtil.readFileToByteArray(message.toString());
-                            outputStream.write(data);
-                            outputStream.write("\n".getBytes());
-                            outputStream.flush();
-                            outputStream.write(END_OF_MESSAGE.getBytes());
-                            outputStream.write("\n".getBytes());
-                            outputStream.flush();
-                            System.out.println("根据请求，成功发送文件给服务器");
-                        }
-                        if(message.size()==2) {
-                            System.out.println("客户端"+ message.get(0)+"发送给你的消息为：");
-                            System.out.println(FileUtil.decode(message.get(1)));
-                        }
+                    try {
+                        FileUtil.handleClientMessage(outputStream, message);
                     } catch (Exception e) {
-                        System.out.println("我下线了");
-                        outputStream.close();
-                        inputStream.close();
-                        socket.close();
-                        break;
+                        FileUtil.logError(e);
+                        break; // Exited the loop on exception to avoid potential resource leaks.
                     }
                 }
-
-            } catch (Exception e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -109,6 +74,7 @@ public class FileClient {
         public FileClientOutputThread(Socket socket){
             this.socket = socket;
         }
+        @Override
         public void run() {
             try {
                 OutputStream outputStream = socket.getOutputStream();
@@ -120,7 +86,7 @@ public class FileClient {
                 while (true) {
                     if(scanner.hasNext()) {
                         String filePath = scanner.nextLine();
-                        if (filePath.equals("exit")) {
+                        if ("exit".equals(filePath)) {
                             System.out.println("我下线了");
                             outputStream.close();
                             socket.getInputStream().close();
@@ -148,7 +114,7 @@ public class FileClient {
                             outputStream.write(data);
                             outputStream.write("\n".getBytes());
                             outputStream.flush();
-                            outputStream.write("END_OF_MESSAGE".getBytes());
+                            outputStream.write(END_OF_MESSAGE.getBytes());
                             outputStream.write("\n".getBytes());
                             outputStream.flush();
                             System.out.println("发送文件成功");

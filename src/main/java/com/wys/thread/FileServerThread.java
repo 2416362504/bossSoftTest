@@ -1,5 +1,6 @@
-package com.wys;
+package com.wys.thread;
 
+import com.wys.FileServerObserver;
 import com.wys.utils.FileUtil;
 
 import java.io.*;
@@ -12,50 +13,49 @@ import java.util.*;
  * @Date 2024/1/5
  * @Description File传输服务端
  */
-public class FileServer {
-
-    private static Map<String,Socket> socketMap = new HashMap<>();
-    private static List<String> userIdList = new ArrayList<>();
-
-    public static void main(String[] args) throws IOException {
-        //定义一个ServerSocket服务端对象，并为其绑定端口号
-        ServerSocket server = new ServerSocket(8888);
-        System.out.println("===========File服务端启动================");
-        //对File来讲，每个Socket都需要一个Thread
-        while (true) {
-            //监听客户端Socket连接
-            Socket socket = server.accept();
-            System.out.println("有客户端连接");
-            //从socket中获取输入流
-            InputStream inputStream = socket.getInputStream();
-            //转换为
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            System.out.println("等待客户端发送id消息...");
-            String id;
-            while ((id = bufferedReader.readLine()) != null) {
-                System.out.println("客户端的id为："+id);
-                break;
-            }
-            if (userIdList.contains(id)) {
-                System.out.println("客户端"+id+"已上线");
-                socket.close();
-            }else {
-                userIdList.add(id);
-                socketMap.put(id, socket);
-                userIdList.forEach(System.out::println);
-                new FileServerInputThread(id,socket).start();
-                new FileServerOutputThread(id,socket).start();
-            }
-        }
-
-    }
+public class FileServerThread {
+//
+//    private static Map<String,Socket> socketMap = new HashMap<>();
+//    private static List<String> userIdList = new ArrayList<>();
+//
+//    public static void main(String[] args) throws IOException {
+//        //定义一个ServerSocket服务端对象，并为其绑定端口号
+//        ServerSocket server = new ServerSocket(8888);
+//        System.out.println("===========File服务端启动================");
+//        //对File来讲，每个Socket都需要一个Thread
+//        while (true) {
+//            //监听客户端Socket连接
+//            Socket socket = server.accept();
+//            System.out.println("有客户端连接");
+//            //从socket中获取输入流
+//            InputStream inputStream = socket.getInputStream();
+//            //转换为
+//            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+//            System.out.println("等待客户端发送id消息...");
+//            String id;
+//            while ((id = bufferedReader.readLine()) != null) {
+//                System.out.println("客户端的id为："+id);
+//                break;
+//            }
+//            if (userIdList.contains(id)) {
+//                System.out.println("客户端"+id+"已上线");
+//                socket.close();
+//            }else {
+//                userIdList.add(id);
+//                socketMap.put(id, socket);
+//                userIdList.forEach(System.out::println);
+//                new FileServerInputThread(id,socket).start();
+//                new FileServerOutputThread(id,socket).start();
+//            }
+//        }
+//    }
 
     /**
      * @description: 服务端输入线程
      * @author: wys
      * @date: 2024/01/08  20/07
      */
-    static class FileServerInputThread extends Thread{
+    public static class FileServerInputThread extends Thread{
         //socket连接
         private Socket socket;
         private String id;
@@ -95,7 +95,7 @@ public class FileServer {
                         }
                         //判断是否为单条信息 如果是则存储到服务端的本地磁盘
                         if(message.size()==1) {
-                            System.out.println("收到客户端消息：\n" + message.get(0));
+                            System.out.println("收到客户端消息!");
                             msg = FileUtil.decode(message.get(0));
                             if (FileUtil.isXML(msg)) {
                                 try (FileWriter writer = new FileWriter("E:\\IDEAWorkspace\\bossSoftTest\\src\\main\\resources\\2.xml")) { // 省略第二个参数的话，写入位置从文件开头开始
@@ -116,9 +116,9 @@ public class FileServer {
                             new FileOutputToClientThread(message.get(0),message.get(1)).start();
                         }
                     } catch (Exception e) {
-                        if (userIdList.contains(id)) {
-                            userIdList.remove(id);
-                            socketMap.remove(id);
+                        if (FileServerObserver.userIdList.contains(id)) {
+                            FileServerObserver.userIdList.remove(id);
+                            FileServerObserver.socketMap.remove(id);
                         }
                         System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                         bufferedReader.close();
@@ -137,7 +137,7 @@ public class FileServer {
      * @author: wys
      * @date: 2024/01/08  20/07
      */
-    static class FileServerOutputThread extends Thread {
+    public static class FileServerOutputThread extends Thread {
         //socket连接
         private Socket socket;
         private String id;
@@ -168,17 +168,17 @@ public class FileServer {
                             System.out.println("服务端发送消息成功");
                         }
                         if(socket.isClosed()){
-                            if (userIdList.contains(id)) {
-                                userIdList.remove(id);
-                                socketMap.remove(id);
+                            if (FileServerObserver.userIdList.contains(id)) {
+                                FileServerObserver.userIdList.remove(id);
+                                FileServerObserver.socketMap.remove(id);
                             }
                             System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                             break;
                         }
                     } catch (Exception e) {
-                        if (userIdList.contains(id)) {
-                            userIdList.remove(id);
-                            socketMap.remove(id);
+                        if (FileServerObserver.userIdList.contains(id)) {
+                            FileServerObserver.userIdList.remove(id);
+                            FileServerObserver.socketMap.remove(id);
                         }
                         System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                         printStream.close();
@@ -208,11 +208,10 @@ public class FileServer {
         @Override
         public void run() {
             while(true){
-                System.out.println(userIdList.contains(id));
-                if(!userIdList.contains(id)){
+                if(!FileServerObserver.userIdList.contains(id)){
                     continue;
                 }
-                Socket socket = socketMap.get(id);
+                Socket socket = FileServerObserver.socketMap.get(id);
                 try {
                     System.out.println("收到客户端发给客户端"+id+"的加密消息：\n" + msg);
                     OutputStream outputStream = socket.getOutputStream();
