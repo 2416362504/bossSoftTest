@@ -1,4 +1,4 @@
-package com.wys.Factory;
+package com.wys.factory;
 
 
 import java.net.Socket;

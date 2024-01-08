@@ -1,6 +1,6 @@
-package com.wys.Factory.impl;
+package com.wys.factory.impl;
 
-import com.wys.Factory.SocketFactory;
+import com.wys.factory.SocketFactory;
 
 import java.io.IOException;
 import java.net.Socket;
