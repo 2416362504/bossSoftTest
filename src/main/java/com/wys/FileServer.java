@@ -5,7 +5,7 @@ import com.wys.utils.FileUtil;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * @Author wys
@@ -13,6 +13,9 @@ import java.util.Scanner;
  * @Description File传输服务端
  */
 public class FileServer {
+
+    private static Map<String,Socket> socketMap = new HashMap<>();
+    private static List<String> userIdList = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         //定义一个ServerSocket服务端对象，并为其绑定端口号
@@ -22,9 +25,25 @@ public class FileServer {
         while (true) {
             //监听客户端Socket连接
             Socket socket = server.accept();
-            System.out.println("qqqqq");
-            new FileServerInputThread(socket).start();
-            new FileServerOutputThread(socket).start();
+            System.out.println("有客户端连接");
+            //从socket中获取输入流
+            InputStream inputStream = socket.getInputStream();
+            //转换为
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            System.out.println("等待客户端发送id消息...");
+            String id;
+            while ((id = bufferedReader.readLine()) != null) {
+                System.out.println("客户端的id为："+id);
+                break;
+            }
+            if (userIdList.contains(id)) {
+                System.out.println("客户端"+id+"已上线");
+            }else {
+                userIdList.add(id);
+                socketMap.put(id, socket);
+                new FileServerInputThread(id,socket).start();
+                new FileServerOutputThread(id,socket).start();
+            }
         }
 
     }
@@ -35,7 +54,10 @@ public class FileServer {
     static class FileServerInputThread extends Thread{
         //socket连接
         private Socket socket;
-        public FileServerInputThread(Socket socket){
+        private String id;
+
+        public FileServerInputThread(String id,Socket socket){
+            this.id=id;
             this.socket=socket;
         }
 
@@ -50,9 +72,8 @@ public class FileServer {
                     try {
                         // 读取数据
                         StringBuilder message = new StringBuilder();
-                        String msg;
                         //从Buffer中读取信息，如果读取到信息则输出
-                        System.out.println("等待客户端发送消息...");
+                        String msg;
                         while ((msg = bufferedReader.readLine()) != null) {
                             System.out.println(msg);
                             if ("END_OF_MESSAGE".equals(msg)) {
@@ -84,6 +105,10 @@ public class FileServer {
                         System.out.println("ddddd");
 
                     } catch (Exception e) {
+                        if (userIdList.contains(id)) {
+                            userIdList.remove(id);
+                            socketMap.remove(id);
+                        }
                         System.out.println("客户端ggg下线了"+socket.getRemoteSocketAddress());
                         bufferedReader.close();
                         socket.close();
@@ -98,7 +123,9 @@ public class FileServer {
     static class FileServerOutputThread extends Thread {
         //socket连接
         private Socket socket;
-        public FileServerOutputThread(Socket socket){
+        private String id;
+        public FileServerOutputThread(String id, Socket socket){
+            this.id=id;
             this.socket=socket;
         }
         @Override
@@ -124,10 +151,18 @@ public class FileServer {
                             System.out.println("服务端发送消息成功");
                         }
                         if(socket.isClosed()){
+                            if (userIdList.contains(id)) {
+                                userIdList.remove(id);
+                                socketMap.remove(id);
+                            }
                             System.out.println("客户端下aaaa线了"+socket.getRemoteSocketAddress());
                             break;
                         }
                     } catch (Exception e) {
+                        if (userIdList.contains(id)) {
+                            userIdList.remove(id);
+                            socketMap.remove(id);
+                        }
                         System.out.println("客户端下aaaa线了"+socket.getRemoteSocketAddress());
                         printStream.close();
                         socket.close();

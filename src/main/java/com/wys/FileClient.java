@@ -17,6 +17,7 @@ import com.wys.utils.FileUtil;
 public class FileClient {
 
     private static SocketFactory socketFactory = new DefaultSocketFactory();
+    private static String userId = "1";
     public static void main(String[] args) throws IOException {
 
         System.out.println("===========File客户端启动================");
@@ -94,6 +95,10 @@ public class FileClient {
             try {
                 OutputStream outputStream = socket.getOutputStream();
                 Scanner scanner = new Scanner(System.in);
+                //向服务端发送id
+                outputStream.write((userId+"\n").getBytes());
+                outputStream.flush();
+                System.out.println("请输入文件路径或者输入exit退出登录：");
                 while (true) {
                     if(scanner.hasNext()) {
                         String filePath = scanner.nextLine();
