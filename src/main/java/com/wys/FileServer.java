@@ -38,9 +38,11 @@ public class FileServer {
             }
             if (userIdList.contains(id)) {
                 System.out.println("客户端"+id+"已上线");
+                socket.close();
             }else {
                 userIdList.add(id);
                 socketMap.put(id, socket);
+                userIdList.forEach(System.out::println);
                 new FileServerInputThread(id,socket).start();
                 new FileServerOutputThread(id,socket).start();
             }
@@ -71,7 +73,7 @@ public class FileServer {
                 while (true) {
                     try {
                         // 读取数据
-                        StringBuilder message = new StringBuilder();
+                        List<String> message = new ArrayList<>();
                         //从Buffer中读取信息，如果读取到信息则输出
                         String msg;
                         while ((msg = bufferedReader.readLine()) != null) {
@@ -79,28 +81,37 @@ public class FileServer {
                             if ("END_OF_MESSAGE".equals(msg)) {
                                 break;
                             }
-                            message.append(msg);
+                            message.add(msg);
                         }
+                        System.out.println("收到的数组为："+message.size());
                         //判断是否为结束信息,如果为空，则关闭连接
-                        if (message.length()==0) {
+                        if (message.size()==0) {
                             System.out.println("客户端ggg下线了"+socket.getRemoteSocketAddress());
                             bufferedReader.close();
                             socket.close();
                             break;
                         }
-                        msg = FileUtil.decode(message.toString());
-                        System.out.println("收到客户端消息：\n" + msg);
-                        if (FileUtil.isXML(msg)) {
-                            System.out.println("dsfsdgsdg");
-                            try (FileWriter writer = new FileWriter("E:\\IDEAWorkspace\\bossSoftTest\\src\\main\\resources\\2.xml")) { // 省略第二个参数的话，写入位置从文件开头开始
-                                writer.write(msg);
+
+                        if(message.size()==1) {
+                            System.out.println("收到客户端消息：\n" + message.get(0));
+                            msg = FileUtil.decode(message.get(0));
+                            if (FileUtil.isXML(msg)) {
+                                System.out.println("dsfsdgsdg");
+                                try (FileWriter writer = new FileWriter("E:\\IDEAWorkspace\\bossSoftTest\\src\\main\\resources\\2.xml")) { // 省略第二个参数的话，写入位置从文件开头开始
+                                    writer.write(msg);
+                                }
+                            } else if (FileUtil.isJSON(msg)) {
+                                try (FileWriter writer = new FileWriter("E:\\IDEAWorkspace\\bossSoftTest\\src\\main\\resources\\2.json")) { // 省略第二个参数的话，写入位置从文件开头开始
+                                    writer.write(msg);
+                                }
+                            } else {
+                                System.out.println("数据不是json格式或者xml格式，请重新选择：\n");
                             }
-                        } else if (FileUtil.isJSON(msg)) {
-                            try (FileWriter writer = new FileWriter("E:\\IDEAWorkspace\\bossSoftTest\\src\\main\\resources\\2.json")) { // 省略第二个参数的话，写入位置从文件开头开始
-                                writer.write(msg);
-                            }
-                        } else {
-                            System.out.println("数据不是json格式或者xml格式，请重新选择：\n");
+                        }
+                        if(message.size()==2){
+                            System.out.println("要发送的客户端id为："+message.get(0));
+                            //message.get(0)为客户端的id，message.get(1)为文件内容
+                            new FileOutputToClientThread(message.get(0),message.get(1)).start();
                         }
                         System.out.println("ddddd");
 
@@ -171,6 +182,45 @@ public class FileServer {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    static class FileOutputToClientThread extends Thread {
+        private String id;
+        private String msg;
+
+        FileOutputToClientThread(String id,String msg){
+            this.id=id;
+            this.msg=msg;
+        }
+        @Override
+        public void run() {
+            while(true){
+                if(!userIdList.contains(id)){
+                    continue;
+                }
+                System.out.println("开始转发消息");
+                Socket socket = socketMap.get(id);
+                try {
+                    System.out.println("收到客户端发给客户端"+id+"的加密消息：\n" + msg);
+                    OutputStream outputStream = socket.getOutputStream();
+                    PrintStream printStream = new PrintStream(outputStream);
+                    printStream.write(id.getBytes());
+                    printStream.write("\n".getBytes());
+                    printStream.flush();
+                    printStream.write(msg.getBytes());
+                    printStream.write("\n".getBytes());
+                    printStream.flush();
+                    printStream.write("END_OF_MESSAGE".getBytes());
+                    printStream.write("\n".getBytes());
+                    printStream.flush();
+                    System.out.println("成功转发客户端的消息给客户端"+id);
+                    break;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
             }
         }
     }

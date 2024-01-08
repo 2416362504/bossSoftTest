@@ -3,6 +3,8 @@ package com.wys;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import com.wys.factory.SocketFactory;
@@ -46,7 +48,7 @@ public class FileClient {
                 while (true) {
                     try {
                         // 读取数据
-                        StringBuilder message = new StringBuilder();
+                        List<String> message = new ArrayList<>();
                         String msg;
                         //从Buffer中读取信息，如果读取到信息则输出
                         while ((msg = bufferedReader.readLine()) != null&&!socket.isClosed()) {
@@ -54,21 +56,27 @@ public class FileClient {
                             if ("END_OF_MESSAGE".equals(msg)) {
                                 break;
                             }
-                            message.append(msg);
+                            message.add(msg);
                         }
-                        if (message.length()==0) {
+                        if (message.size()==0) {
                             continue;
                         }
-                        System.out.println("收到服务端请求：" + message);
+                        if(message.size()==1) {
+                            System.out.println("收到服务端请求：" + message);
 
-                        byte[] data = FileUtil.readFileToByteArray(message.toString());
-                        outputStream.write(data);
-                        outputStream.write("\n".getBytes());
-                        outputStream.flush();
-                        outputStream.write("END_OF_MESSAGE".getBytes());
-                        outputStream.write("\n".getBytes());
-                        outputStream.flush();
-                        System.out.println("根据请求，成功发送文件给服务器");
+                            byte[] data = FileUtil.readFileToByteArray(message.toString());
+                            outputStream.write(data);
+                            outputStream.write("\n".getBytes());
+                            outputStream.flush();
+                            outputStream.write("END_OF_MESSAGE".getBytes());
+                            outputStream.write("\n".getBytes());
+                            outputStream.flush();
+                            System.out.println("根据请求，成功发送文件给服务器");
+                        }
+                        if(message.size()==2) {
+                            System.out.println("客户端"+ message.get(0)+"发送给你的消息为：");
+                            System.out.println(FileUtil.decode(message.get(1)));
+                        }
                     } catch (Exception e) {
                         System.out.println("我下hhdd线了");
                         outputStream.close();
@@ -109,14 +117,32 @@ public class FileClient {
                             socket.close();
                             break;
                         }
-                        byte[] data = FileUtil.readFileToByteArray(filePath);
-                        outputStream.write(data);
-                        outputStream.write("\n".getBytes());
-                        outputStream.flush();
-                        outputStream.write("END_OF_MESSAGE".getBytes());
-                        outputStream.write("\n".getBytes());
-                        outputStream.flush();
-                        System.out.println("发送文件成功");
+                        String[] msg =filePath.split(" ");
+                        if(msg.length==1) {
+                            System.out.println("开始发送文件");
+                            byte[] data = FileUtil.readFileToByteArray(filePath);
+                            outputStream.write(data);
+                            outputStream.write("\n".getBytes());
+                            outputStream.flush();
+                            outputStream.write("END_OF_MESSAGE".getBytes());
+                            outputStream.write("\n".getBytes());
+                            outputStream.flush();
+                            System.out.println("发送文件成功");
+                        }
+                        if(msg.length==3){
+                            System.out.println("开始发送文件");
+                            outputStream.write(msg[1].getBytes());
+                            outputStream.write("\n".getBytes());
+                            outputStream.flush();
+                            byte[] data = FileUtil.readFileToByteArray(msg[2]);
+                            outputStream.write(data);
+                            outputStream.write("\n".getBytes());
+                            outputStream.flush();
+                            outputStream.write("END_OF_MESSAGE".getBytes());
+                            outputStream.write("\n".getBytes());
+                            outputStream.flush();
+                            System.out.println("发送文件成功");
+                        }
                     }
                 }
             } catch (Exception e) {

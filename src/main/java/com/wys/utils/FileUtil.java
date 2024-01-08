@@ -2,6 +2,7 @@ package com.wys.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -136,5 +137,15 @@ public class FileUtil {
         }
     }
 
+    public static void sendDataToServer(OutputStream outputStream, String filePath) throws Exception {
+        byte[] data = FileUtil.readFileToByteArray(filePath);
+        outputStream.write(data);
+        outputStream.write("\n".getBytes());
+        outputStream.flush();
+        outputStream.write("END_OF_MESSAGE".getBytes());
+        outputStream.write("\n".getBytes());
+        outputStream.flush();
+        System.out.println("发送文件成功");
+    }
 
 }
