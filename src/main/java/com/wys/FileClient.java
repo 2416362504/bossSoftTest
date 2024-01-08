@@ -15,7 +15,7 @@ import com.wys.utils.FileUtil;
  */
 public class FileClient {
     private static final String END_OF_MESSAGE = "END_OF_MESSAGE";
-    private static String userId = "1";
+    private static String userId = "2";
     public static void main(String[] args) throws IOException {
 
         System.out.println("===========File客户端启动================");

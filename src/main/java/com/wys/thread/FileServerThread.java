@@ -97,6 +97,7 @@ public class FileServerThread {
                         if(message.size()==1) {
                             System.out.println("收到客户端消息!");
                             msg = FileUtil.decode(message.get(0));
+                            System.out.println(msg);
                             if (FileUtil.isXML(msg)) {
                                 try (FileWriter writer = new FileWriter("E:\\IDEAWorkspace\\bossSoftTest\\src\\main\\resources\\2.xml")) { // 省略第二个参数的话，写入位置从文件开头开始
                                     writer.write(msg);
@@ -160,10 +161,10 @@ public class FileServerThread {
                             String[] temp = msg.split(" ");
                             //通过输出流对象向客户端传递信息
                             //outputStream.write(temp[1].getBytes());
-                            printStream.println(temp[1] + "\n");
+                            printStream.println(temp[1]); //有换行的println
                             //System.out.println(temp[1]);
                             outputStream.flush();
-                            printStream.println("END_OF_MESSAGE\n");
+                            printStream.println("END_OF_MESSAGE"); //有换行的println
                             outputStream.flush();
                             System.out.println("服务端发送消息成功");
                         }
