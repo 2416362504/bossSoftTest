@@ -2,10 +2,9 @@ package com.wys;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import com.wys.exception.FileClientException;
 import com.wys.utils.FileUtil;
 
 /**
@@ -15,16 +14,20 @@ import com.wys.utils.FileUtil;
  */
 public class FileClient {
     private static final String END_OF_MESSAGE = "END_OF_MESSAGE";
-    private static String userId = "2";
-    public static void main(String[] args) throws IOException {
+    private static String userId = "1";
+    public static void main(String[] args) {
 
         System.out.println("===========File客户端启动================");
 
         //创建socket并根据IP地址与端口连接服务端
-        Socket socket = new Socket("127.0.0.1", 8888);
-
-        new FileClient.FileClientOutputThread(socket).start();
-        new FileClient.FileClientInputThread(socket).start();
+        Socket socket = null;
+        try {
+            socket = new Socket("127.0.0.1", 8888);
+            new FileClient.FileClientOutputThread(socket).start();
+            new FileClient.FileClientInputThread(socket).start();
+        } catch (Exception e) {
+            FileUtil.logError(e);
+        }
     }
 
     /*/**
@@ -54,11 +57,11 @@ public class FileClient {
                         FileUtil.handleClientMessage(outputStream, message);
                     } catch (Exception e) {
                         FileUtil.logError(e);
-                        break; // Exited the loop on exception to avoid potential resource leaks.
+                        new FileClientException("处理客户端消息时发生异常", e);
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                new FileClientException("",e);
             }
         }
     }
@@ -70,7 +73,7 @@ public class FileClient {
      */
     static class FileClientOutputThread extends Thread {
 
-        private Socket socket;
+        private final Socket socket;
         public FileClientOutputThread(Socket socket){
             this.socket = socket;
         }
@@ -87,7 +90,7 @@ public class FileClient {
                     if(scanner.hasNext()) {
                         String filePath = scanner.nextLine();
                         if ("exit".equals(filePath)) {
-                            System.out.println("我下线了");
+                            new FileClientException("我退出登录了");
                             outputStream.close();
                             socket.getInputStream().close();
                             socket.close();
@@ -122,7 +125,7 @@ public class FileClient {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                new FileClientException("",e);
             }
         }
     }

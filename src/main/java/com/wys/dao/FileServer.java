@@ -12,6 +12,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.wys.FileServerObserver.executorService;
+
 /**
  * @author wys
  * @version 1.0.0
@@ -57,10 +59,14 @@ public class FileServer implements Observable {
             System.out.println("等待客户端发送id消息...");
             String id;
             while ((id = bufferedReader.readLine()) != null) {
-                System.out.println("客户端的id为：" + id);
                 break;
             }
-
+            if("exit".equals(id)){
+                System.out.println("服务端退出");
+                executorService.shutdown();//关闭线程池
+                break;
+            }
+            System.out.println("客户端的id为：" + id);
             notifyObservers(id, socket);
         }
     }

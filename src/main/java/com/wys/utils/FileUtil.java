@@ -28,7 +28,7 @@ public class FileUtil {
      * @return:
      */
     public final static String ENCODING = "UTF-8";
-    private static final String END_OF_MESSAGE = "END_OF_MESSAGE";
+    public static final String END_OF_MESSAGE = "END_OF_MESSAGE";
     private static final String NEW_LINE = "\n";
 
     /**

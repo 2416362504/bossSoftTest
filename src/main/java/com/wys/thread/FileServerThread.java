@@ -1,12 +1,15 @@
 package com.wys.thread;
 
 import com.wys.FileServerObserver;
+import com.wys.exception.FileServerException;
 import com.wys.utils.FileUtil;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+
+import static com.wys.utils.FileUtil.END_OF_MESSAGE;
 
 /**
  * @Author wys
@@ -55,12 +58,12 @@ public class FileServerThread {
      * @author: wys
      * @date: 2024/01/08  20/07
      */
-    public static class FileServerInputThread extends Thread{
+    public static class FileServerInputTask implements Runnable{
         //socket连接
         private Socket socket;
         private String id;
 
-        public FileServerInputThread(String id,Socket socket){
+        public FileServerInputTask(String id,Socket socket){
             this.id=id;
             this.socket=socket;
         }
@@ -80,14 +83,14 @@ public class FileServerThread {
                         String msg;
                         while ((msg = bufferedReader.readLine()) != null) {
                             //System.out.println(msg);
-                            if ("END_OF_MESSAGE".equals(msg)) {
+                            if (END_OF_MESSAGE.equals(msg)) {
                                 break;
                             }
                             message.add(msg);
                         }
                         //System.out.println("收到的数组为："+message.size());
                         //判断是否为结束信息,如果为空，则关闭连接
-                        if (message.size()==0) {
+                        if (message.isEmpty()) {
                             System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
                             bufferedReader.close();
                             socket.close();
@@ -117,18 +120,14 @@ public class FileServerThread {
                             new FileOutputToClientThread(message.get(0),message.get(1)).start();
                         }
                     } catch (Exception e) {
-                        if (FileServerObserver.userIdList.contains(id)) {
-                            FileServerObserver.userIdList.remove(id);
-                            FileServerObserver.socketMap.remove(id);
-                        }
-                        System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
+                        new FileServerException(id);
                         bufferedReader.close();
                         socket.close();
                         break;
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                new FileServerException("其它问题：/n",e);
             }
         }
     }
@@ -138,11 +137,11 @@ public class FileServerThread {
      * @author: wys
      * @date: 2024/01/08  20/07
      */
-    public static class FileServerOutputThread extends Thread {
+    public static class FileServerOutputTask implements Runnable {
         //socket连接
         private Socket socket;
         private String id;
-        public FileServerOutputThread(String id, Socket socket){
+        public FileServerOutputTask(String id, Socket socket){
             this.id=id;
             this.socket=socket;
         }
@@ -169,26 +168,18 @@ public class FileServerThread {
                             System.out.println("服务端发送消息成功");
                         }
                         if(socket.isClosed()){
-                            if (FileServerObserver.userIdList.contains(id)) {
-                                FileServerObserver.userIdList.remove(id);
-                                FileServerObserver.socketMap.remove(id);
-                            }
-                            System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
+                            new FileServerException(id);
                             break;
                         }
                     } catch (Exception e) {
-                        if (FileServerObserver.userIdList.contains(id)) {
-                            FileServerObserver.userIdList.remove(id);
-                            FileServerObserver.socketMap.remove(id);
-                        }
-                        System.out.println("客户端下线了"+socket.getRemoteSocketAddress());
+                        new FileServerException(id);
                         printStream.close();
                         socket.close();
                         break;
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                new FileServerException("其它问题\n", e);
             }
         }
     }
@@ -229,7 +220,7 @@ public class FileServerThread {
                     System.out.println("成功转发客户端的消息给客户端"+id);
                     break;
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    new FileServerException("客户端发送给客户端"+id+"的消息失败",e);
                 }
 
             }
